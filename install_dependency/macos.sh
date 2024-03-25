@@ -1,0 +1,1 @@
+brew install cmake mpg123 libvorbis ffmpeg libao
