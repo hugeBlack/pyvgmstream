@@ -3,6 +3,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+import shutil
 
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
@@ -66,11 +67,22 @@ class CMakeBuild(build_ext):
         elif sys.platform == "win32":
             cmake_args.append("-G")
             cmake_args.append('Unix Makefiles')
-            if not os.path.exists("./vgmstream/dependencies"):
-                subprocess.run(
-                    [os.path.abspath(".\\vgmstream\\msvc-build-init.bat")], cwd=os.path.abspath(".\\vgmstream"), check=True
-                )
+
+            source_folder = ".\\vgmstream\\ext_libs\\dll-x64"
+            dll_files = [file for file in os.listdir(source_folder) if file.lower().endswith(".dll")]
+            dest_folder = extdir
+            if not os.path.exists(dest_folder):
+                os.makedirs(dest_folder)
+                print(f"Created {dest_folder}")
+
+            # Copy each .dll file to the destination folder
+            for dll_file in dll_files:
+                source_path = os.path.join(source_folder, dll_file)
+                dest_path = os.path.join(dest_folder, dll_file)
+                shutil.copy(source_path, dest_path)
+                print(f"Copied {dll_file} to {dest_folder}")
             
+
         print(cmake_args)
         subprocess.run(
             ["cmake", ext.sourcedir, *cmake_args], cwd=build_temp, check=True
@@ -78,6 +90,8 @@ class CMakeBuild(build_ext):
         subprocess.run(
             ["cmake", "--build", ".", "--", "-j"], cwd=build_temp, check=True
         )
+ 
+
 
 
 # The information here can also be placed in setup.cfg - better separation of
@@ -88,8 +102,9 @@ setup(
     author="Huge_Black",
     description="A vgmstream library that you can directly call from python.",
     long_description="",
-    ext_modules=[CMakeExtension("pyvgmstream")],
+    ext_modules=[CMakeExtension("pyvgmstream.libpyvgmstream")],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
     python_requires=">=3.7",
+    packages=['pyvgmstream']
 )

@@ -25,7 +25,7 @@ py::bytes pyConvert(const std::string& sourceBytes,const char* inputFileExtensio
 
 
 
-PYBIND11_MODULE(pyvgmstream, m) {
+PYBIND11_MODULE(libpyvgmstream, m) {
     py::class_<VgmConfig>(m, "VgmConfig")
         .def(py::init<>())
         .def_readwrite("loop_count", &VgmConfig::loop_count)
