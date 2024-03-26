@@ -4,13 +4,18 @@
 
 namespace py = pybind11;
 
+class VgmStreamFunction{
+public:
+    VgmStreamFunction(init_vgmstream_t func) : func(func){}
+    init_vgmstream_t func;
+};
 
-py::bytes pyConvert(const std::string& sourceBytes,const char* inputFileExtension, VgmConfig* config) {
+py::bytes pyConvert(const std::string& sourceBytes,const char* inputFileExtension, init_vgmstream_t vgmstream_function, init_vgmstream_t* output_function, VgmConfig* config) {
     MyFile source, dest;
     int l = sourceBytes.length() + 1;
     source.reset(l);
     sourceBytes.copy(source.buffer, l);
-    convert(source, config, dest, inputFileExtension);
+    convert(source, dest, inputFileExtension, vgmstream_function, config, output_function);
     py::bytes ans(dest.buffer, dest.current);
 
     return ans;
@@ -18,9 +23,25 @@ py::bytes pyConvert(const std::string& sourceBytes,const char* inputFileExtensio
 
 py::bytes pyConvert(const std::string& sourceBytes,const char* inputFileExtension) {
     VgmConfig c = { 0 };
-    return pyConvert(sourceBytes, inputFileExtension, &c);
+    return pyConvert(sourceBytes, inputFileExtension, 0, 0, &c);
 }
 
+py::bytes pyConvertWithFunction(const std::string& sourceBytes, const char* inputFileExtension, VgmStreamFunction* vgmstream_function) {
+    VgmConfig c = { 0 };
+    return pyConvert(sourceBytes, inputFileExtension, vgmstream_function->func, 0, &c);
+}
+
+py::tuple pyConvertAndGetFunction(const std::string& sourceBytes,const char* inputFileExtension) {
+    VgmConfig c = { 0 };
+    init_vgmstream_t output_function;
+    py::bytes ans1 = pyConvert(sourceBytes, inputFileExtension, 0, &output_function, &c);
+    VgmStreamFunction* ans2 = new VgmStreamFunction(output_function);
+
+    py::tuple ans(2);
+    ans[0] = ans1;
+    ans[1] = ans2;
+    return ans;
+}
 
 
 
@@ -55,6 +76,9 @@ PYBIND11_MODULE(libpyvgmstream, m) {
         .def_readwrite("validate_extensions", &VgmConfig::validate_extensions)
         .def_readwrite("downmix_channels", &VgmConfig::downmix_channels);
 
-    m.def("convert", py::overload_cast<const std::string &,const char*, VgmConfig *>(pyConvert), "convert sourceBytes to .wav files");
+    m.def("convertAndGetFunction", pyConvertAndGetFunction, "convert sourceBytes to .wav files and get decode function");
+    m.def("convertWithFunction", pyConvertWithFunction, "convert sourceBytes to .wav files with decode function");
+
     m.def("convert", py::overload_cast<const std::string &, const char*>(pyConvert), "convert sourceBytes to .wav files, with default config");
+    py::class_<VgmStreamFunction>(m, "VgmStreamFunction");
 }

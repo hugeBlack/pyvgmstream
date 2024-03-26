@@ -40,7 +40,7 @@ extern "C"
 
 int write_file(VGMSTREAM* vgmstream, MyFile& dest, cli_config* cfg);
 
-int convert(MyFile& source, VgmConfig* cfg1, MyFile& dest, const char * inputFileExtension) {
+int convert(MyFile& source, MyFile& dest, const char * inputFileExtension, init_vgmstream_t vgmstream_function, VgmConfig* cfg1,init_vgmstream_t* output_vgmstream_function) {
 
     cli_config c = { 0 };
     copyCfg(cfg1, &c);
@@ -78,7 +78,12 @@ int convert(MyFile& source, VgmConfig* cfg1, MyFile& dest, const char * inputFil
         }
 
         sf->stream_index = cfg->subsong_index;
-        vgmstream = init_vgmstream_from_STREAMFILE(sf);
+        if(vgmstream_function){
+            vgmstream = init_vgmstream_with_function(sf, vgmstream_function);
+        }else{
+            vgmstream = init_vgmstream_and_get_function(sf, output_vgmstream_function);
+        }
+
 
         close_streamfile(sf);
 

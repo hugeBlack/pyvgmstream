@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.6)
 project(pyvgmstream)
 
-set(BUILD_EXE FALSE)
+set(BUILD_EXE OFF)
 
 option(BUILD_FB2K OFF)
 option(BUILD_CLI OFF)

@@ -8,7 +8,7 @@ using namespace std;
 
 int main() {
 	ifstream myfile;
-	myfile.open("Z:\\getVoiceOver.wem", ios::in | ios::binary | ios::ate);
+	myfile.open("E:\\7ztmp\\getVoiceOver.wem", ios::in | ios::binary | ios::ate);
 	MyFile source;
 	MyFile ans;
 
@@ -20,11 +20,33 @@ int main() {
 
 	VgmConfig c = { 0 };
 
-	convert(source, &c, ans, "wem");
+
+	init_vgmstream_t func;
+	convert(source, ans, "wem", 0, &c, &func);
 
 	ofstream output;
 	output.open("Z:\\test.wav", ios::binary);
 	output.write(ans.buffer, ans.current);
+	output.close();
 
-	myfile.close();
+	// -- test2, with generated func
+
+	ifstream myfile2;
+	myfile2.open("E:\\7ztmp\\getVoiceOver2.wem", ios::in | ios::binary | ios::ate);
+	MyFile source2;
+	MyFile ans2;
+
+	int size2 = myfile2.tellg();
+	source2.reset(size2);
+	myfile2.seekg(0);
+	myfile2.read(source2.buffer, size2);
+	source2.current = size2;
+
+	ofstream output2;
+	output2.open("Z:\\test2.wav", ios::binary);
+	convert(source2, ans2, "wem", func, &c, 0);
+	output2.write(ans2.buffer, ans2.current);
+	output2.close();
+
+	myfile2.close();
 }
