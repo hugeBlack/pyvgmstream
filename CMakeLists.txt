@@ -6,6 +6,8 @@ set(BUILD_EXE OFF)
 option(BUILD_FB2K OFF)
 option(BUILD_CLI OFF)
 option(BUILD_V123 OFF)
+option(BUILD_XMPLAY OFF)
+option(BUILD_WINAMP OFF)
 
 include_directories(${PROJECT_SOURCE_DIR}/vgmstream)
 

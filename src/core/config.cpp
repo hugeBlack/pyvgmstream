@@ -5,7 +5,6 @@ extern "C"{
 #include "src/vgmstream.h"
 #include "src/api.h"
 #include "src/util.h"
-#include "src/util/samples_ops.h"
 
 #include <stdio.h>
 }

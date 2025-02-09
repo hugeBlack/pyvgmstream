@@ -4,7 +4,6 @@ extern "C"
 #include "src/vgmstream.h"
 #include "src/api.h"
 #include "src/util.h"
-#include "src/util/samples_ops.h"
 	//todo use <>?
 #ifdef HAVE_JSON
 #include "jansson/jansson.h"
@@ -40,7 +39,34 @@ extern "C"
 
 int write_file(VGMSTREAM* vgmstream, MyFile& dest, cli_config* cfg);
 
-int convert(MyFile& source, MyFile& dest, const char * inputFileExtension, init_vgmstream_t vgmstream_function, VgmConfig* cfg1,init_vgmstream_t* output_vgmstream_function) {
+static inline void swap_value(uint8_t* buf, int sample_size) {
+    for (int i = 0; i < sample_size / 2; i++) {
+        char temp = buf[i];
+        buf[i] = buf[sample_size - i - 1];
+        buf[sample_size - i - 1] = temp;
+    }
+}
+
+/* when endianness is LE buffer is correct already and this function can be skipped */
+void wav_swap_samples_le(void* samples, int samples_len, int sample_size) {
+    /* Windows can't be BE... I think */
+#if !defined(_WIN32)
+#if !defined(__BYTE_ORDER__) || __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+    if (!sample_size)
+        sample_size = sizeof(short);
+
+    /* 16b sample in memory is AABB where AA=MSB, BB=LSB, swap to BBAA */
+
+    uint8_t* buf = samples;
+    for (int i = 0; i < samples_len; i += sample_size) {
+        swap_value(buf + i, sample_size);
+    }
+#endif
+#endif
+}
+
+
+int convert(MyFile& source, MyFile& dest, const char * inputFileExtension, int formatId, VgmConfig* cfg1 ,int* outputFormatId) {
 
     cli_config c = { 0 };
     copyCfg(cfg1, &c);
@@ -78,10 +104,12 @@ int convert(MyFile& source, MyFile& dest, const char * inputFileExtension, init_
         }
 
         sf->stream_index = cfg->subsong_index;
-        if(vgmstream_function){
-            vgmstream = init_vgmstream_with_function(sf, vgmstream_function);
+        if(formatId < 0){
+            vgmstream = init_vgmstream_from_STREAMFILE(sf);
+            *outputFormatId = vgmstream->format_id;
         }else{
-            vgmstream = init_vgmstream_and_get_function(sf, output_vgmstream_function);
+            init_vgmstream_t vgmstream_format_init = get_vgmstream_format_init(formatId);
+            vgmstream = vgmstream_format_init(sf);
         }
 
 
@@ -297,8 +325,11 @@ int write_file(VGMSTREAM* vgmstream, MyFile& dest, cli_config* cfg) {
 
         render_vgmstream(buf, to_get, vgmstream);
 
+        int buf_samples = to_get;
+        int sample_size = 0;
+
         if (!cfg->decode_only) {
-            swap_samples_le(buf, channels * to_get); /* write PC endian */
+            wav_swap_samples_le(buf, channels * buf_samples, sample_size); /* write PC endian */
             dest.write(buf, sizeof(sample_t) * channels, to_get);
         }
     }

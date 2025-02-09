@@ -1,6 +1,8 @@
 #pragma once
 extern "C" {
     #include "src/vgmstream.h"
+    #include "src/vgmstream_init.h"
+    #include "src/meta/meta.h"
 }
 
 typedef struct {
